@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>端午轉盤</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    overflow: hidden;
+    font-family: 'PingFang TC', 'Noto Sans TC', 'Segoe UI', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  /* 背景 */
+  .bg {
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 40%, rgba(60,0,100,0.85) 0%, rgba(10,0,30,0.97) 100%);
+    background-color: #0a0018;
+    z-index: 0;
+  }
+
+  /* 背景裝飾粒子 */
+  .bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(1.5px 1.5px at 8%  15%, rgba(255,220,100,0.7) 0%, transparent 100%),
+      radial-gradient(1px   1px   at 18% 70%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(2px   2px   at 28% 35%, rgba(180,100,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px   1px   at 38% 85%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 52% 12%, rgba(255,220,100,0.5) 0%, transparent 100%),
+      radial-gradient(1px   1px   at 62% 55%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(2px   2px   at 72% 25%, rgba(100,180,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px   1px   at 82% 75%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 90% 45%, rgba(180,100,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px   1px   at 95% 88%, rgba(255,220,100,0.4) 0%, transparent 100%),
+      radial-gradient(1px   1px   at 45% 60%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(2px   2px   at 15% 90%, rgba(100,255,180,0.4) 0%, transparent 100%);
+  }
+
+  /* 光暈 */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(90px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .orb1 { width:500px; height:500px; background:rgba(100,0,200,0.18); top:-150px; left:-150px; }
+  .orb2 { width:400px; height:400px; background:rgba(0,60,180,0.14); bottom:-100px; right:-100px; }
+  .orb3 { width:350px; height:350px; background:rgba(180,0,100,0.12); bottom:80px; left:80px; }
+
+  /* 標題 */
+  h1 {
+    position: relative;
+    z-index: 1;
+    color: #fff;
+    font-size: 1.8rem;
+    font-weight: 300;
+    letter-spacing: 6px;
+    text-shadow: 0 0 24px rgba(200,140,255,0.9);
+    margin-bottom: 20px;
+  }
+
+  /* 轉盤區 */
+  .wheel-wrap {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 540px;
+    height: 540px;
+  }
+
+  /* 彩虹外環 */
+  .outer-ring {
+    position: absolute;
+    width: 550px;
+    height: 550px;
+    border-radius: 50%;
+    background: conic-gradient(
+      #ff6b6b 0%, #ffd93d 12%, #6bcb77 25%, #4d96ff 37%,
+      #e040fb 50%, #ff9f43 62%, #48dbfb 75%, #ff6b6b 100%
+    );
+    animation: ring-glow 6s linear infinite;
+    box-shadow: 0 0 50px rgba(180,100,255,0.5), 0 0 100px rgba(180,100,255,0.2);
+  }
+  .outer-ring::after {
+    content: '';
+    position: absolute;
+    inset: 7px;
+    border-radius: 50%;
+    background: #0a0018;
+  }
+  @keyframes ring-glow {
+    from { transform: rotate(0deg); filter: hue-rotate(0deg); }
+    to   { transform: rotate(360deg); filter: hue-rotate(360deg); }
+  }
+
+  /* 指針 */
+  .pointer {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    filter: drop-shadow(0 0 10px rgba(255,200,0,0.9));
+  }
+
+  /* 中心按鈕 */
+  .center-btn {
+    position: absolute;
+    z-index: 10;
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, #fff 0%, #ddc8ff 50%, #9040df 100%);
+    border: 3px solid rgba(255,255,255,0.85);
+    box-shadow: 0 0 24px rgba(160,80,255,0.8), 0 4px 16px rgba(0,0,0,0.5);
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #3a006a;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .center-btn:hover {
+    transform: scale(1.12);
+    box-shadow: 0 0 36px rgba(160,80,255,1), 0 4px 20px rgba(0,0,0,0.5);
+  }
+  .center-btn:active { transform: scale(0.93); }
+
+  canvas {
+    position: relative;
+    z-index: 2;
+    border-radius: 50%;
+    box-shadow: 0 0 0 5px rgba(255,255,255,0.08), 0 0 40px rgba(140,80,255,0.4);
+  }
+
+  /* 開始轉動按鈕 */
+  .spin-btn {
+    position: relative;
+    z-index: 1;
+    margin-top: 28px;
+    background: linear-gradient(135deg, #7020e0, #c040f0);
+    border: none;
+    border-radius: 40px;
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 500;
+    letter-spacing: 4px;
+    padding: 14px 52px;
+    cursor: pointer;
+    box-shadow: 0 4px 32px rgba(140,40,240,0.5);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .spin-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 44px rgba(180,60,255,0.7);
+  }
+  .spin-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* 音樂按鈕 */
+  .music-btn {
+    position: fixed;
+    top: 20px;
+    right: 24px;
+    z-index: 20;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 50%;
+    width: 44px; height: 44px;
+    cursor: pointer;
+    color: #fff;
+    font-size: 1.2rem;
+    backdrop-filter: blur(8px);
+    transition: background 0.2s;
+  }
+  .music-btn:hover { background: rgba(255,255,255,0.16); }
+
+  /* 結果彈窗 */
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.4s;
+    backdrop-filter: blur(4px);
+  }
+  .overlay.show { opacity: 1; pointer-events: all; }
+
+  .result-box {
+    background: linear-gradient(145deg, #2a0055, #160030);
+    border: 1.5px solid rgba(200,120,255,0.45);
+    border-radius: 28px;
+    padding: 48px 56px;
+    text-align: center;
+    box-shadow: 0 0 80px rgba(160,80,255,0.35), 0 0 0 1px rgba(255,255,255,0.05);
+    transform: scale(0.75);
+    transition: transform 0.45s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .overlay.show .result-box { transform: scale(1); }
+
+  .result-label {
+    color: rgba(255,255,255,0.45);
+    font-size: 0.8rem;
+    letter-spacing: 4px;
+    margin-bottom: 16px;
+  }
+  .result-text {
+    color: #fff;
+    font-size: 2.4rem;
+    font-weight: 700;
+    text-shadow: 0 0 28px rgba(200,140,255,0.85);
+    margin-bottom: 32px;
+    max-width: 300px;
+    word-break: break-all;
+    line-height: 1.3;
+  }
+  .close-btn {
+    background: linear-gradient(135deg, #7020e0, #c040f0);
+    border: none;
+    border-radius: 30px;
+    color: #fff;
+    font-size: 0.95rem;
+    letter-spacing: 3px;
+    padding: 11px 36px;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(160,80,255,0.4);
+    transition: transform 0.2s;
+  }
+  .close-btn:hover { transform: scale(1.06); }
+
+  /* 粒子 canvas */
+  #particles { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+</style>
+</head>
+<body>
+
+<div class="bg"></div>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+
+<canvas id="particles"></canvas>
+
+<button class="music-btn" id="musicBtn" onclick="toggleMusic()" title="背景音樂">♪</button>
+
+<h1>端午轉盤</h1>
+
+<div class="wheel-wrap">
+  <div class="outer-ring"></div>
+
+  <!-- 指針 -->
+  <div class="pointer">
+    <svg width="38" height="52" viewBox="0 0 38 52" fill="none">
+      <defs>
+        <linearGradient id="pg" x1="19" y1="0" x2="19" y2="52" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#FFE566"/>
+          <stop offset="100%" stop-color="#FF8C00"/>
+        </linearGradient>
+      </defs>
+      <polygon points="19,2 37,44 19,35 1,44" fill="url(#pg)"/>
+      <polygon points="19,2 37,44 19,35 1,44" fill="rgba(255,255,255,0.18)"/>
+    </svg>
+  </div>
+
+  <canvas id="wheel" width="500" height="500"></canvas>
+  <button class="center-btn" onclick="spin()">轉！</button>
+</div>
+
+<button class="spin-btn" id="spinBtn" onclick="spin()">開始轉動</button>
+
+<!-- 結果彈窗 -->
+<div class="overlay" id="overlay" onclick="closeResult()">
+  <div class="result-box" onclick="event.stopPropagation()">
+    <div class="result-label">恭 喜 得 到</div>
+    <div class="result-text" id="resultText"></div>
+    <button class="close-btn" onclick="closeResult()">再 轉 一 次</button>
+  </div>
+</div>
+
+<script>
+/* ── 選項 ── */
+const OPTIONS = ['粽子','平安健康','划龍舟','艾草','菖蒲','香包','雄黃酒','屈原','楚國','汨羅江','糯米','鹹蛋黃','我愛端午','南部粽','北部粽','白蛇傳','豆沙粽','冰箱冷凍庫','粽繩','吃飽飽','驅邪','立蛋','午時水','端陽','美女里長','五彩線','節慶','電鍋','蝦米','舞龍舞獅'];
+
+const COLORS = [
+  '#FF6B6B','#FF9F43','#FECA57','#48DBFB','#1DD1A1',
+  '#54A0FF','#FF9FF3','#A29BFE','#FD79A8','#FDCB6E',
+  '#6C5CE7','#00CEC9','#E17055','#74B9FF','#55EFC4',
+  '#FF7675','#A8E6CF','#FFD3B6','#FFAAA5','#FF8B94',
+  '#99B898','#FECEAB','#E84393','#45B7D1','#96CEB4',
+  '#FFEAA7','#DDA0DD','#98D8C8','#F7DC6F','#82E0AA'
+];
+
+/* ── Audio ── */
+let audioCtx = null;
+let bgmNode = null;
+let bgmGain = null;
+let musicOn = false;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+/* 背景音樂：簡單循環和弦 */
+function startBgm() {
+  const ctx = getAudioCtx();
+  if (bgmNode) { bgmNode.stop(); bgmNode = null; }
+
+  bgmGain = ctx.createGain();
+  bgmGain.gain.setValueAtTime(0.07, ctx.currentTime);
+  bgmGain.connect(ctx.destination);
+
+  const notes = [261.6, 329.6, 392, 523.2, 392, 329.6]; // C E G C G E
+  const master = ctx.createGain();
+  master.gain.value = 1;
+  master.connect(bgmGain);
+
+  let t = ctx.currentTime;
+  const loop = () => {
+    if (!musicOn) return;
+    notes.forEach((freq, i) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0, t + i * 0.35);
+      g.gain.linearRampToValueAtTime(0.3, t + i * 0.35 + 0.05);
+      g.gain.linearRampToValueAtTime(0, t + i * 0.35 + 0.32);
+      o.connect(g); g.connect(master);
+      o.start(t + i * 0.35);
+      o.stop(t + i * 0.35 + 0.35);
+    });
+    t += notes.length * 0.35;
+    setTimeout(loop, (notes.length * 0.35 - 0.1) * 1000);
+  };
+  loop();
+}
+
+function toggleMusic() {
+  const btn = document.getElementById('musicBtn');
+  musicOn = !musicOn;
+  btn.textContent = musicOn ? '♫' : '♪';
+  btn.style.color = musicOn ? '#c8a0ff' : '#fff';
+  if (musicOn) startBgm();
+}
+
+/* 轉動音效 */
+function playSpin() {
+  const ctx = getAudioCtx();
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.15, ctx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 3);
+  g.connect(ctx.destination);
+
+  for (let i = 0; i < 6; i++) {
+    const o = ctx.createOscillator();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(800 + i * 120, ctx.currentTime + i * 0.18);
+    o.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 3);
+    o.connect(g);
+    o.start(ctx.currentTime + i * 0.18);
+    o.stop(ctx.currentTime + 3);
+  }
+}
+
+/* 得獎音效 */
+function playWin() {
+  const ctx = getAudioCtx();
+  const melody = [523.2, 659.3, 783.9, 1046.5, 783.9, 1046.5];
+  melody.forEach((freq, i) => {
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(0, ctx.currentTime + i * 0.13);
+    g.gain.linearRampToValueAtTime(0.25, ctx.currentTime + i * 0.13 + 0.04);
+    g.gain.linearRampToValueAtTime(0, ctx.currentTime + i * 0.13 + 0.22);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(ctx.currentTime + i * 0.13);
+    o.stop(ctx.currentTime + i * 0.13 + 0.25);
+  });
+}
+
+/* ── 轉盤 ── */
+const canvas = document.getElementById('wheel');
+const ctx2d  = canvas.getContext('2d');
+let currentAngle = 0;
+let spinning = false;
+
+function drawWheel(angle) {
+  const W = canvas.width, H = canvas.height;
+  const cx = W / 2, cy = H / 2;
+  const r  = Math.min(W, H) / 2 - 6;
+  ctx2d.clearRect(0, 0, W, H);
+
+  const slice = (Math.PI * 2) / OPTIONS.length;
+
+  OPTIONS.forEach((opt, i) => {
+    const s = angle + i * slice;
+    const e = s + slice;
+
+    ctx2d.beginPath();
+    ctx2d.moveTo(cx, cy);
+    ctx2d.arc(cx, cy, r, s, e);
+    ctx2d.closePath();
+    ctx2d.fillStyle = COLORS[i % COLORS.length];
+    ctx2d.fill();
+    ctx2d.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx2d.lineWidth = 1.2;
+    ctx2d.stroke();
+
+    ctx2d.save();
+    ctx2d.translate(cx, cy);
+    ctx2d.rotate(s + slice / 2);
+    ctx2d.textAlign = 'right';
+    ctx2d.fillStyle = '#fff';
+    const fs = Math.min(15, Math.max(9, 260 / OPTIONS.length / Math.max(opt.length, 1) * 1.8));
+    ctx2d.font = `bold ${fs}px 'PingFang TC', sans-serif`;
+    ctx2d.shadowColor = 'rgba(0,0,0,0.7)';
+    ctx2d.shadowBlur = 4;
+    ctx2d.fillText(opt, r - 12, fs * 0.38);
+    ctx2d.restore();
+  });
+
+  // 中心裝飾圈
+  const grad = ctx2d.createRadialGradient(cx, cy, 0, cx, cy, 40);
+  grad.addColorStop(0, '#fff');
+  grad.addColorStop(0.45, '#e0c8ff');
+  grad.addColorStop(1, '#8030df');
+  ctx2d.beginPath();
+  ctx2d.arc(cx, cy, 40, 0, Math.PI * 2);
+  ctx2d.fillStyle = grad;
+  ctx2d.fill();
+  ctx2d.strokeStyle = 'rgba(255,255,255,0.9)';
+  ctx2d.lineWidth = 2.5;
+  ctx2d.stroke();
+}
+
+function spin() {
+  if (spinning) return;
+  spinning = true;
+  document.getElementById('spinBtn').disabled = true;
+
+  // 首次互動後啟動音樂
+  if (!musicOn) {
+    musicOn = true;
+    document.getElementById('musicBtn').textContent = '♫';
+    document.getElementById('musicBtn').style.color = '#c8a0ff';
+    startBgm();
+  }
+  playSpin();
+
+  const totalRad = (Math.random() * 360 + 1800 + 720) * (Math.PI / 180);
+  const dur = 4500 + Math.random() * 2000;
+  const start = performance.now();
+  const startAngle = currentAngle;
+
+  const ease = t => 1 - Math.pow(1 - t, 4);
+
+  function frame(now) {
+    const t = Math.min((now - start) / dur, 1);
+    currentAngle = startAngle + totalRad * ease(t);
+    drawWheel(currentAngle);
+    if (t < 1) {
+      requestAnimationFrame(frame);
+    } else {
+      spinning = false;
+      document.getElementById('spinBtn').disabled = false;
+      showResult();
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+function showResult() {
+  const slice = (Math.PI * 2) / OPTIONS.length;
+  const adjusted = ((Math.PI * 1.5) - (currentAngle % (Math.PI * 2)) + Math.PI * 4) % (Math.PI * 2);
+  const idx = Math.floor(adjusted / slice) % OPTIONS.length;
+  document.getElementById('resultText').textContent = OPTIONS[idx];
+  document.getElementById('overlay').classList.add('show');
+  playWin();
+  launchConfetti();
+}
+
+function closeResult() {
+  document.getElementById('overlay').classList.remove('show');
+}
+
+/* ── 粒子彩帶 ── */
+const pCanvas = document.getElementById('particles');
+const pCtx = pCanvas.getContext('2d');
+let particles = [];
+
+function resizeParticles() {
+  pCanvas.width  = window.innerWidth;
+  pCanvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeParticles);
+resizeParticles();
+
+function launchConfetti() {
+  for (let i = 0; i < 120; i++) {
+    particles.push({
+      x: window.innerWidth / 2,
+      y: window.innerHeight / 2,
+      vx: (Math.random() - 0.5) * 14,
+      vy: (Math.random() - 0.8) * 14,
+      color: COLORS[Math.floor(Math.random() * COLORS.length)],
+      size: Math.random() * 8 + 4,
+      alpha: 1,
+      rot: Math.random() * 360,
+      rspeed: (Math.random() - 0.5) * 8,
+      life: 1
+    });
+  }
+  animParticles();
+}
+
+function animParticles() {
+  pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+  particles = particles.filter(p => p.life > 0);
+  particles.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.3;
+    p.vx *= 0.98;
+    p.life -= 0.015;
+    p.rot += p.rspeed;
+    pCtx.save();
+    pCtx.globalAlpha = Math.max(0, p.life);
+    pCtx.translate(p.x, p.y);
+    pCtx.rotate(p.rot * Math.PI / 180);
+    pCtx.fillStyle = p.color;
+    pCtx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+    pCtx.restore();
+  });
+  if (particles.length > 0) requestAnimationFrame(animParticles);
+  else pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+}
+
+/* init */
+drawWheel(0);
+canvas.addEventListener('click', spin);
+</script>
+</body>
+</html>
