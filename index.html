@@ -182,6 +182,10 @@
 </head>
 <body>
 
+<!-- YouTube 隱藏播放器 -->
+<div id="yt-player" style="position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;"></div>
+<script src="https://www.youtube.com/iframe_api"></script>
+
 <div class="bg"></div>
 <canvas id="particles"></canvas>
 <button class="music-btn" id="musicBtn" onclick="toggleMusic()">♪</button>
@@ -276,13 +280,30 @@ function applySize() {
 
 window.addEventListener('resize', applySize);
 
-/* ── Audio ── */
-let audioCtx = null, musicOn = false;
+/* ── YouTube BGM ── */
+let ytPlayer = null, musicOn = false;
+
+window.onYouTubeIframeAPIReady = function() {
+  ytPlayer = new YT.Player('yt-player', {
+    videoId: 'hWAG3UM5WNs',
+    playerVars: { autoplay: 0, controls: 0, loop: 1, playlist: 'hWAG3UM5WNs', mute: 0 },
+    events: {
+      onReady: e => e.target.setVolume(70)
+    }
+  });
+};
+
+function startBgm() {
+  if (ytPlayer && ytPlayer.playVideo) ytPlayer.playVideo();
+}
+
+/* ── SFX Audio (Web Audio - 音效保留) ── */
+let audioCtx = null;
 function getCtx() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   return audioCtx;
 }
-function startBgm() {
+function _startBgm_unused() {
   const ctx = getCtx();
   // 不可能的任務 5/4 拍 BPM=138
   const BPM = 138, Q = 60/BPM, E = Q/2, BAR = Q*5;
@@ -450,7 +471,11 @@ function toggleMusic() {
   const btn = document.getElementById('musicBtn');
   btn.textContent = musicOn ? '♫' : '♪';
   btn.style.color = musicOn ? '#A7C957' : '#95D5B2';
-  if (musicOn) startBgm();
+  if (musicOn) {
+    startBgm();
+  } else {
+    if (ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo();
+  }
 }
 function playSpin() {
   // 真實轉盤物理音效：咔咔咔咔咔 越來越慢
@@ -616,7 +641,12 @@ function spin() {
   if (spinning) return;
   spinning = true;
   spinBtn.disabled = true;
-  if (!musicOn) { musicOn = true; document.getElementById('musicBtn').textContent = '♫'; startBgm(); }
+  if (!musicOn) {
+    musicOn = true;
+    const btn = document.getElementById('musicBtn');
+    btn.textContent = '♫'; btn.style.color = '#A7C957';
+    startBgm();
+  }
   playSpin();
   const totalRad = (Math.random()*360 + 1800 + 720) * (Math.PI/180);
   const dur = 4500 + Math.random()*2000;
