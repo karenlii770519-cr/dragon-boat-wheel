@@ -461,7 +461,6 @@ function toggleMusic() {
 }
 
 function playWin() {
-  // 打鼓揭曉：snare roll → 大鼓 crash → 銅管 fanfare
   const ctx = getCtx();
   const t = ctx.currentTime;
 
@@ -472,22 +471,7 @@ function playWin() {
     return buf;
   }
 
-  // Snare roll（加速）
-  const rollDur = 1.6;
-  let rollT = t;
-  for (let i = 0; i < 28; i++) {
-    const p = i / 27;
-    const interval = 0.16 * Math.pow(1 - p, 1.8) + 0.02;
-    const s = ctx.createBufferSource(), g = ctx.createGain(), hp = ctx.createBiquadFilter();
-    hp.type = 'highpass'; hp.frequency.value = 2000;
-    s.buffer = mkNoise(0.06);
-    g.gain.setValueAtTime(0.1 + p * 0.5, rollT);
-    g.gain.exponentialRampToValueAtTime(0.001, rollT + 0.06);
-    s.connect(hp); hp.connect(g); g.connect(ctx.destination); s.start(rollT);
-    rollT += interval;
-  }
-
-  const hitT = rollT; // 最後一聲落點
+  const hitT = t; // 立刻觸發
 
   // 大鼓 BOOM
   const ko = ctx.createOscillator(), kg = ctx.createGain();
@@ -589,22 +573,16 @@ function spin() {
   const dur = 4500 + Math.random()*2000;
   const t0 = performance.now(), a0 = currentAngle;
   const ease = t => 1 - Math.pow(1-t, 4);
-  let winPlayed = false;
   function frame(now) {
     const t = Math.min((now-t0)/dur, 1);
     currentAngle = a0 + totalRad * ease(t);
     drawWheel(currentAngle);
-    // snare roll 約 1.6 秒，提前觸發讓 BOOM 剛好對到轉盤停止
-    if (!winPlayed && (now - t0) > dur - 1650) {
-      winPlayed = true;
-      playWin();
-    }
     if (t < 1) requestAnimationFrame(frame);
     else {
       spinning = false;
       spinBtn.disabled = false;
-      // BOOM 剛好此刻，等 0.2 秒再彈出結果
-      setTimeout(showResult, 200);
+      playWin();
+      setTimeout(showResult, 300);
     }
   }
   requestAnimationFrame(frame);
