@@ -20,23 +20,16 @@
     background-color: #0b1f0e;
   }
 
-  /* ── 粽子連續背景 ── */
+  /* ── 背景圖 ── */
   .bg {
     position: fixed;
     inset: 0;
     z-index: 0;
-    /* 深綠底色 */
+    background-image: url('bg.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     background-color: #0b1f0e;
-    /* 粽子 SVG tile */
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='110' viewBox='0 0 90 110'%3E%3Cg opacity='0.18'%3E%3C!-- 粽葉主體 --%3E%3Cpolygon points='45,18 78,82 45,95 12,82' fill='%2340916C'/%3E%3Cpolygon points='45,18 78,82 45,95 12,82' fill='none' stroke='%2352B788' stroke-width='1.5'/%3E%3C!-- 中間橫線紋路 --%3E%3Cline x1='20' y1='55' x2='70' y2='55' stroke='%2352B788' stroke-width='1' opacity='0.6'/%3E%3Cline x1='25' y1='68' x2='65' y2='68' stroke='%2352B788' stroke-width='1' opacity='0.6'/%3E%3Cline x1='30' y1='40' x2='60' y2='40' stroke='%2352B788' stroke-width='1' opacity='0.6'/%3E%3C!-- 頂部綁繩 --%3E%3Ccircle cx='45' cy='16' r='5' fill='none' stroke='%23A7C957' stroke-width='2'/%3E%3Cline x1='45' y1='4' x2='45' y2='11' stroke='%23A7C957' stroke-width='2'/%3E%3Cline x1='38' y1='8' x2='45' y2='11' stroke='%23A7C957' stroke-width='1.5'/%3E%3Cline x1='52' y1='8' x2='45' y2='11' stroke='%23A7C957' stroke-width='1.5'/%3E%3C/g%3E%3C/svg%3E");
-    background-size: 90px 110px;
-    /* 深色疊加讓背景不搶眼 */
-  }
-  .bg::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(ellipse 100% 100% at 50% 50%, rgba(5,18,8,0.60) 0%, rgba(5,18,8,0.82) 100%);
   }
 
   /* ── 轉盤外框（純陰影，不是實體環） ── */
@@ -58,15 +51,6 @@
     /* right 由 JS 動態設定 */
   }
 
-  /* 吉祥物 */
-  .mascot {
-    position: fixed;
-    bottom: 0;
-    z-index: 5;
-    pointer-events: none;
-  }
-  .mascot-l { left: 0; }
-  .mascot-r { right: 0; }
 
   /* 中心按鈕 */
   .center-btn {
@@ -190,8 +174,6 @@
 <canvas id="particles"></canvas>
 <button class="music-btn" id="musicBtn" onclick="toggleMusic()">♪</button>
 
-<img src="l.gif" class="mascot mascot-l" id="mascotL">
-<img src="r.gif" class="mascot mascot-r" id="mascotR">
 
 <div class="wheel-wrap" id="wheelWrap">
   <div class="pointer" id="pointer">
@@ -710,15 +692,6 @@ function animP() {
   });
   if (particles.length > 0) requestAnimationFrame(animP);
 }
-
-/* 吉祥物尺寸 */
-function sizeMascots() {
-  const h = Math.round(window.innerHeight * 0.28);
-  document.getElementById('mascotL').style.height = h + 'px';
-  document.getElementById('mascotR').style.height = h + 'px';
-}
-window.addEventListener('resize', sizeMascots);
-sizeMascots();
 
 /* init */
 applySize();
