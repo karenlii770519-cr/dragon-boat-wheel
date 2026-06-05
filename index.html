@@ -22,10 +22,17 @@
   .bg {
     position: fixed;
     inset: 0;
-    background:
-      radial-gradient(ellipse 80% 60% at 50% 40%, rgba(60,0,100,0.85) 0%, rgba(10,0,30,0.97) 100%);
+    background-image: url('bg.jpg');
+    background-size: cover;
+    background-position: center;
     background-color: #0a0018;
     z-index: 0;
+  }
+  .bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(20,0,60,0.72) 0%, rgba(5,0,20,0.88) 100%);
   }
 
   /* 背景裝飾粒子 */
@@ -111,7 +118,7 @@
   /* 指針 */
   .pointer {
     position: absolute;
-    top: -10px;
+    top: -4px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 10;
@@ -272,12 +279,12 @@
     <svg width="38" height="52" viewBox="0 0 38 52" fill="none">
       <defs>
         <linearGradient id="pg" x1="19" y1="0" x2="19" y2="52" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="#FFE566"/>
-          <stop offset="100%" stop-color="#FF8C00"/>
+          <stop offset="0%" stop-color="#FF8C00"/>
+          <stop offset="100%" stop-color="#FFE566"/>
         </linearGradient>
       </defs>
-      <polygon points="19,2 37,44 19,35 1,44" fill="url(#pg)"/>
-      <polygon points="19,2 37,44 19,35 1,44" fill="rgba(255,255,255,0.18)"/>
+      <polygon points="19,50 37,8 19,17 1,8" fill="url(#pg)"/>
+      <polygon points="19,50 37,8 19,17 1,8" fill="rgba(255,255,255,0.18)"/>
     </svg>
   </div>
 
@@ -432,12 +439,17 @@ function drawWheel(angle) {
     ctx2d.translate(cx, cy);
     ctx2d.rotate(s + slice / 2);
     ctx2d.textAlign = 'right';
-    ctx2d.fillStyle = '#fff';
-    const fs = Math.min(15, Math.max(9, 260 / OPTIONS.length / Math.max(opt.length, 1) * 1.8));
-    ctx2d.font = `bold ${fs}px 'PingFang TC', sans-serif`;
-    ctx2d.shadowColor = 'rgba(0,0,0,0.7)';
-    ctx2d.shadowBlur = 4;
-    ctx2d.fillText(opt, r - 12, fs * 0.38);
+    const fs = Math.min(14, Math.max(10, 14));
+    ctx2d.font = `bold ${fs}px 'PingFang TC','Noto Sans TC',sans-serif`;
+    // 描邊增加可讀性
+    ctx2d.strokeStyle = 'rgba(0,0,0,0.85)';
+    ctx2d.lineWidth = 3;
+    ctx2d.lineJoin = 'round';
+    ctx2d.strokeText(opt, r - 14, fs * 0.38);
+    ctx2d.fillStyle = '#ffffff';
+    ctx2d.shadowColor = 'rgba(0,0,0,0)';
+    ctx2d.shadowBlur = 0;
+    ctx2d.fillText(opt, r - 14, fs * 0.38);
     ctx2d.restore();
   });
 
