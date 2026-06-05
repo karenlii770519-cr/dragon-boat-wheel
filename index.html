@@ -284,124 +284,164 @@ function getCtx() {
 }
 function startBgm() {
   const ctx = getCtx();
-  const BPM = 140, Q = 60 / BPM, E = Q / 2, BAR = Q * 5;
+  // 不可能的任務 5/4 拍 BPM=138
+  const BPM = 138, Q = 60/BPM, E = Q/2, BAR = Q*5;
 
-  const N = {
-    E2:82.4, G2:98.0, A2:110.0, B2:123.5, C3:130.8,
-    E3:164.8, G3:196.0, A3:220.0, B3:246.9,
-    E4:329.6, F4:349.2, Fs4:370.0, G4:392.0, A4:440.0, B4:493.9,
-    C5:523.3, D5:587.3, E5:659.3, G5:784.0
-  };
+  // 音符頻率（A4=440）
+  function hz(semis) { return 440 * Math.pow(2, semis/12); }
+  const E2=hz(-24), F2=hz(-23), Fs2=hz(-22), G2=hz(-21), A2=hz(-19), B2=hz(-17);
+  const E3=hz(-12), F3=hz(-11), Fs3=hz(-10), G3=hz(-9),  A3=hz(-7),  B3=hz(-5);
+  const C4=hz(-4),  Cs4=hz(-3), D4=hz(-2),  Ds4=hz(-1), E4=hz(0),
+        F4=hz(1),   Fs4=hz(2),  G4=hz(3),   Gs4=hz(4),  A4=hz(5),   As4=hz(6), B4=hz(7);
+  const C5=hz(8),   D5=hz(10),  Ds5=hz(11), E5=hz(12),  G5=hz(15);
 
-  const master = ctx.createGain();
-  master.gain.value = 0.45;
+  const master = ctx.createGain(); master.gain.value = 0.5;
   const comp = ctx.createDynamicsCompressor();
-  comp.threshold.value = -18; comp.ratio.value = 4;
+  comp.threshold.value=-16; comp.ratio.value=4; comp.attack.value=0.003; comp.release.value=0.15;
   comp.connect(master); master.connect(ctx.destination);
 
-  function note(freq, t, dur, vol=0.28, type='sawtooth') {
+  // 銅管音色（sawtooth + lowpass）
+  function brass(freq, t, dur, vol=0.32) {
     if (!musicOn) return;
-    const o = ctx.createOscillator(), g = ctx.createGain();
-    const lp = ctx.createBiquadFilter();
-    lp.type='lowpass'; lp.frequency.value=2200;
-    o.type=type; o.frequency.value=freq;
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(vol, t+0.02);
-    g.gain.setValueAtTime(vol*0.65, t+dur*0.55);
-    g.gain.linearRampToValueAtTime(0, t+dur*0.88);
-    o.connect(lp); lp.connect(g); g.connect(comp);
-    o.start(t); o.stop(t+dur);
+    const o=ctx.createOscillator(), g=ctx.createGain(), lp=ctx.createBiquadFilter();
+    lp.type='lowpass'; lp.frequency.setValueAtTime(800, t); lp.frequency.linearRampToValueAtTime(2800, t+0.04);
+    o.type='sawtooth'; o.frequency.value=freq;
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+0.025);
+    g.gain.setValueAtTime(vol*0.7, t+dur*0.5); g.gain.linearRampToValueAtTime(0,t+dur*0.92);
+    o.connect(lp); lp.connect(g); g.connect(comp); o.start(t); o.stop(t+dur);
+    // 八度加厚
+    const o2=ctx.createOscillator(), g2=ctx.createGain();
+    o2.type='square'; o2.frequency.value=freq*2;
+    g2.gain.setValueAtTime(0,t); g2.gain.linearRampToValueAtTime(vol*0.12,t+0.03);
+    g2.gain.linearRampToValueAtTime(0,t+dur*0.85);
+    o2.connect(g2); g2.connect(comp); o2.start(t); o2.stop(t+dur);
   }
 
-  function bassNote(freq, t, dur) {
-    if (!musicOn) return;
-    const o = ctx.createOscillator(), g = ctx.createGain();
-    o.type='triangle'; o.frequency.value=freq;
-    g.gain.setValueAtTime(0.22, t);
-    g.gain.linearRampToValueAtTime(0, t+dur*0.8);
-    o.connect(g); g.connect(comp);
-    o.start(t); o.stop(t+dur);
-  }
-
-  function kick(t) {
-    if (!musicOn) return;
-    const o = ctx.createOscillator(), g = ctx.createGain();
-    o.frequency.setValueAtTime(160, t);
-    o.frequency.exponentialRampToValueAtTime(40, t+0.12);
-    g.gain.setValueAtTime(0.9, t);
-    g.gain.exponentialRampToValueAtTime(0.001, t+0.14);
-    o.connect(g); g.connect(comp);
-    o.start(t); o.stop(t+0.15);
-  }
-
-  function snare(t) {
-    if (!musicOn) return;
-    const buf = ctx.createBuffer(1, ctx.sampleRate*0.12, ctx.sampleRate);
-    const d = buf.getChannelData(0);
-    for (let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
-    const s=ctx.createBufferSource(), g=ctx.createGain();
-    const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=2000;
-    s.buffer=buf;
-    g.gain.setValueAtTime(0.38, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.12);
-    s.connect(hp); hp.connect(g); g.connect(comp); s.start(t);
-  }
-
-  function hihat(t, vol=0.07) {
-    if (!musicOn) return;
-    const buf = ctx.createBuffer(1, ctx.sampleRate*0.03, ctx.sampleRate);
-    const d = buf.getChannelData(0);
-    for (let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
-    const s=ctx.createBufferSource(), g=ctx.createGain();
-    const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=9000;
-    s.buffer=buf;
-    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.03);
-    s.connect(hp); hp.connect(g); g.connect(comp); s.start(t);
-  }
-
-  function bell(freq, t) {
+  // 低音撥弦
+  function pizz(freq, t, dur) {
     if (!musicOn) return;
     const o=ctx.createOscillator(), g=ctx.createGain();
-    o.type='sine'; o.frequency.value=freq;
-    g.gain.setValueAtTime(0.18, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.5);
-    o.connect(g); g.connect(comp); o.start(t); o.stop(t+0.5);
+    o.type='triangle'; o.frequency.value=freq;
+    g.gain.setValueAtTime(0.28,t); g.gain.exponentialRampToValueAtTime(0.001,t+Math.min(dur,0.35));
+    o.connect(g); g.connect(comp); o.start(t); o.stop(t+dur);
   }
 
-  // ── 旋律（不可能任務 5/4 風格）──
-  // Bar1: E E F F# - G G A -
-  const mel1=[[N.E4,E],[N.E4,E],[N.F4,Q],[N.Fs4,Q],[N.G4,E],[N.G4,E],[N.A4,Q]];
-  // Bar2: E E F F# -- B B C5
-  const mel2=[[N.E4,E],[N.E4,E],[N.F4,E],[N.Fs4,Q+E],[N.B4,E],[N.B4,E],[N.C5,Q]];
-  // Bar3: C5 B4 A4 G4 F#4 E4
-  const mel3=[[N.C5,Q],[N.B4,Q],[N.A4,Q],[N.G4,E],[N.Fs4,E],[N.E4,Q]];
-  // Bar4: 大招 E4 G4 B4 E5（歡樂bell）
-  const mel4=[[N.E4,Q+E],[N.G4,Q],[N.B4,E],[N.E5,Q+E]];
-
-  const bas1=[[N.E2,Q],[N.E2,Q],[N.G2,Q],[N.A2,Q],[N.B2,Q]];
-  const bas2=[[N.E2,Q],[N.E2,Q],[N.G2,Q],[N.A2,Q],[N.B2,Q]];
-  const bas3=[[N.C3,Q+E],[N.A2,Q+E],[N.G2,Q]];
-  const bas4=[[N.E2,Q],[N.E3,Q],[N.E2,Q],[N.G2,Q],[N.B2,Q]];
-
-  function scheduleBar(t, mel, bas) {
-    kick(t); snare(t+Q); kick(t+Q*2); snare(t+Q*3);
-    for (let i=0;i<10;i++) hihat(t+i*E, i%2===0?0.1:0.055);
-    let bt=t; for (const [f,d] of bas) { bassNote(f,bt,d); bt+=d; }
-    let mt=t; for (const [f,d] of mel) { note(f,mt,d*0.9); mt+=d; }
+  // 打擊
+  function mkNoise(dur) {
+    const buf=ctx.createBuffer(1,ctx.sampleRate*dur,ctx.sampleRate);
+    const d=buf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+    return buf;
   }
+  function kick(t) {
+    if (!musicOn) return;
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.frequency.setValueAtTime(180,t); o.frequency.exponentialRampToValueAtTime(38,t+0.12);
+    g.gain.setValueAtTime(1,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.14);
+    o.connect(g); g.connect(comp); o.start(t); o.stop(t+0.15);
+  }
+  function snare(t, vol=0.45) {
+    if (!musicOn) return;
+    const s=ctx.createBufferSource(), g=ctx.createGain(), hp=ctx.createBiquadFilter();
+    hp.type='highpass'; hp.frequency.value=1800;
+    s.buffer=mkNoise(0.14); g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.14);
+    s.connect(hp); hp.connect(g); g.connect(comp); s.start(t);
+  }
+  function hihat(t, vol=0.07) {
+    if (!musicOn) return;
+    const s=ctx.createBufferSource(), g=ctx.createGain(), hp=ctx.createBiquadFilter();
+    hp.type='highpass'; hp.frequency.value=10000;
+    s.buffer=mkNoise(0.025); g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.025);
+    s.connect(hp); hp.connect(g); g.connect(comp); s.start(t);
+  }
+  function rimshot(t) {   // 不可能任務特色 rimshot
+    if (!musicOn) return;
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.type='square'; o.frequency.setValueAtTime(900,t); o.frequency.exponentialRampToValueAtTime(200,t+0.05);
+    g.gain.setValueAtTime(0.5,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.06);
+    o.connect(g); g.connect(comp); o.start(t); o.stop(t+0.06);
+  }
+
+  // ── 不可能的任務主旋律（5/4 拍） ──
+  // 每小節 5 拍 = 5Q
+  //
+  // 主題 ostinato（反覆低音動機）
+  // [E E | F Q | F# Q | rest Q]
+  function schedOstinato(t) {
+    pizz(E2, t,       E*1.8);
+    pizz(E2, t+E,     E*1.8);
+    pizz(F2, t+Q,     Q*0.9);
+    pizz(Fs2,t+Q*2,   Q*0.9);
+    // beat 5 rest
+  }
+
+  // 主旋律 Phrase A（2小節）
+  // "dun-dun DUU-un, dun-dun DUU-un"
+  // Bar1: G4(e) G4(e) | Gs4(q+e) G4(e) | Ds4(q) Ds4(q)
+  // Bar2: D4(e)  D4(e) | Ds4(q+e) D4(e) | C4(q)  C4(q)
+  const phraseA = [
+    [G4,E],[G4,E],[Gs4,Q+E],[G4,E],[Ds4,Q],[Ds4,Q],   // bar1 = 10 eighths ✓
+    [D4,E],[D4,E],[Ds4,Q+E],[D4,E],[C4,Q], [C4,Q],    // bar2
+  ];
+  // Phrase B（2小節）
+  // Bar3: B3(e) B3(e) | C4(q+e) D4(e) | E4(q) E4(q)
+  // Bar4: E4(e) F4(e) | Fs4(e) G4(e)  | Gs4(q) A4(q) As4(q)  ← chromatic climb
+  const phraseB = [
+    [B3,E],[B3,E],[C4,Q+E],[D4,E],[E4,Q],[E4,Q],
+    [E4,E],[F4,E],[Fs4,E],[G4,E],[Gs4,Q],[A4,Q],[As4,Q],
+  ];
+  // Phrase C 大結尾（2小節）stab chords
+  // Bar5: E5(q) r | E5(q) r | E5(q)
+  // Bar6: E4(q+e) G4(e) B4(q) E5(h)
+  const phraseC = [
+    [E5,Q],[E5,Q],[E5,Q*3],   // bar5: punchy hits with space
+    [E4,Q+E],[G4,E],[B4,Q],[E5,Q*2],  // bar6
+  ];
+
+  function playPhrase(t, phrase, bassPattern) {
+    let mt=t;
+    for (const [f,d] of phrase) { if(f) brass(f,mt,d*0.88); mt+=d; }
+    let bt=t;
+    for (const [f,d] of bassPattern) { pizz(f,bt,d); bt+=d; }
+  }
+
+  function schedDrums(t, bars) {
+    for (let b=0; b<bars; b++) {
+      const bt = t + b*BAR;
+      kick(bt);          rimshot(bt+E);
+      snare(bt+Q);
+      kick(bt+Q*2);      rimshot(bt+Q*2+E);
+      snare(bt+Q*3);
+      kick(bt+Q*4);
+      for (let i=0;i<10;i++) hihat(bt+i*E, i%2===0?0.09:0.05);
+    }
+  }
+
+  const bassA = [
+    [E2,Q],[E2,Q],[G2,Q],[A2,Q],[B2,Q],
+    [E2,Q],[E2,Q],[G2,Q],[A2,Q],[B2,Q],
+  ];
+  const bassB = [
+    [E2,Q],[E2,Q],[A2,Q],[A2,Q],[B2,Q],
+    [E2,Q],[F2,Q],[Fs2,Q],[G2,Q],[A2,Q],
+  ];
+  const bassC = [
+    [E2,Q*5],
+    [E2,Q],[G2,Q],[B2,Q],[E3,Q*2],
+  ];
 
   let loopT = ctx.currentTime;
   const scheduleLoop = () => {
     if (!musicOn) return;
     const t = loopT;
-    scheduleBar(t,         mel1, bas1);
-    scheduleBar(t+BAR,     mel2, bas2);
-    scheduleBar(t+BAR*2,   mel3, bas3);
-    scheduleBar(t+BAR*3,   mel4, bas4);
-    // 歡樂 bell 點綴在第4小節
-    bell(N.E5,  t+BAR*3);
-    bell(N.G5,  t+BAR*3+Q*2);
-    bell(N.E5,  t+BAR*3+Q*4);
-    loopT += BAR*4;
-    setTimeout(scheduleLoop, (BAR*4 - 0.25)*1000);
+    schedDrums(t, 6);
+    // 前2拍 ostinato 單獨奏（intro feel）
+    for (let b=0;b<6;b++) schedOstinato(t+b*BAR);
+    // 旋律從第1拍開始
+    playPhrase(t,        phraseA, bassA);
+    playPhrase(t+BAR*2,  phraseB, bassB);
+    playPhrase(t+BAR*4,  phraseC, bassC);
+    loopT += BAR*6;
+    setTimeout(scheduleLoop, (BAR*6 - 0.3)*1000);
   };
   scheduleLoop();
 }
@@ -413,31 +453,110 @@ function toggleMusic() {
   if (musicOn) startBgm();
 }
 function playSpin() {
-  const ctx = getCtx(), g = ctx.createGain();
-  g.gain.setValueAtTime(0.14, ctx.currentTime);
-  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 3);
-  g.connect(ctx.destination);
-  for (let i = 0; i < 6; i++) {
-    const o = ctx.createOscillator();
-    o.type = 'triangle';
-    o.frequency.setValueAtTime(800 + i*120, ctx.currentTime + i*0.18);
-    o.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 3);
-    o.connect(g);
-    o.start(ctx.currentTime + i*0.18);
-    o.stop(ctx.currentTime + 3);
-  }
-}
-function playWin() {
+  // 真實轉盤物理音效：咔咔咔咔咔 越來越慢
   const ctx = getCtx();
-  [523.2, 659.3, 783.9, 1046.5, 783.9, 1046.5].forEach((f, i) => {
-    const o = ctx.createOscillator(), g = ctx.createGain();
-    o.type = 'sine'; o.frequency.value = f;
-    g.gain.setValueAtTime(0, ctx.currentTime + i*0.13);
-    g.gain.linearRampToValueAtTime(0.25, ctx.currentTime + i*0.13 + 0.04);
-    g.gain.linearRampToValueAtTime(0, ctx.currentTime + i*0.13 + 0.22);
-    o.connect(g); g.connect(ctx.destination);
-    o.start(ctx.currentTime + i*0.13); o.stop(ctx.currentTime + i*0.13 + 0.25);
-  });
+  const spinDur = 5.5;
+  const totalClicks = OPTIONS.length * 6; // 約6圈
+
+  function mkClick() {
+    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.018), ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++)
+      d[i] = Math.exp(-i / (ctx.sampleRate * 0.004)) * (Math.random() * 2 - 1);
+    return buf;
+  }
+  const clickBuf = mkClick();
+
+  for (let i = 0; i < totalClicks; i++) {
+    // ease-out: 開始快、結束慢
+    const p = i / totalClicks;
+    const eased = 1 - Math.pow(1 - p, 2.8);
+    const t = ctx.currentTime + eased * spinDur;
+    const vol = 0.18 + p * 0.22; // 越慢聲音越清脆
+
+    const s = ctx.createBufferSource();
+    const g = ctx.createGain();
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 1200 + p * 800;
+    bp.Q.value = 3;
+    s.buffer = clickBuf;
+    g.gain.value = vol;
+    s.connect(bp); bp.connect(g); g.connect(ctx.destination);
+    s.start(t);
+  }
+
+  // 底層旋轉嗚嗚聲（慣性感）
+  const o = ctx.createOscillator(), og = ctx.createGain();
+  o.type = 'sawtooth';
+  o.frequency.setValueAtTime(280, ctx.currentTime);
+  o.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + spinDur);
+  og.gain.setValueAtTime(0.06, ctx.currentTime);
+  og.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + spinDur);
+  o.connect(og); og.connect(ctx.destination);
+  o.start(ctx.currentTime); o.stop(ctx.currentTime + spinDur);
+}
+
+function playWin() {
+  // 打鼓揭曉：snare roll → 大鼓 crash → 銅管 fanfare
+  const ctx = getCtx();
+  const t = ctx.currentTime;
+
+  function mkNoise(dur) {
+    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate*dur), ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+    return buf;
+  }
+
+  // Snare roll（加速）
+  const rollDur = 1.6;
+  let rollT = t;
+  for (let i = 0; i < 28; i++) {
+    const p = i / 27;
+    const interval = 0.16 * Math.pow(1 - p, 1.8) + 0.02;
+    const s = ctx.createBufferSource(), g = ctx.createGain(), hp = ctx.createBiquadFilter();
+    hp.type = 'highpass'; hp.frequency.value = 2000;
+    s.buffer = mkNoise(0.06);
+    g.gain.setValueAtTime(0.1 + p * 0.5, rollT);
+    g.gain.exponentialRampToValueAtTime(0.001, rollT + 0.06);
+    s.connect(hp); hp.connect(g); g.connect(ctx.destination); s.start(rollT);
+    rollT += interval;
+  }
+
+  const hitT = rollT; // 最後一聲落點
+
+  // 大鼓 BOOM
+  const ko = ctx.createOscillator(), kg = ctx.createGain();
+  ko.frequency.setValueAtTime(200, hitT); ko.frequency.exponentialRampToValueAtTime(35, hitT+0.18);
+  kg.gain.setValueAtTime(1.2, hitT); kg.gain.exponentialRampToValueAtTime(0.001, hitT+0.2);
+  ko.connect(kg); kg.connect(ctx.destination); ko.start(hitT); ko.stop(hitT+0.2);
+
+  // Crash cymbal
+  const cs = ctx.createBufferSource(), cg = ctx.createGain(), chp = ctx.createBiquadFilter();
+  chp.type='highpass'; chp.frequency.value=5000;
+  cs.buffer = mkNoise(1.8);
+  cg.gain.setValueAtTime(0.6, hitT); cg.gain.exponentialRampToValueAtTime(0.001, hitT+1.8);
+  cs.connect(chp); chp.connect(cg); cg.connect(ctx.destination); cs.start(hitT);
+
+  // 銅管 Fanfare
+  const fanfare = [
+    [523.25, 0,    0.18],
+    [659.25, 0.18, 0.18],
+    [783.99, 0.36, 0.18],
+    [1046.5, 0.54, 0.7],
+    [783.99, 1.24, 0.18],
+    [1046.5, 1.42, 0.8],
+  ];
+  for (const [f, dt, dur] of fanfare) {
+    const fo=ctx.createOscillator(), fg=ctx.createGain(), flp=ctx.createBiquadFilter();
+    flp.type='lowpass'; flp.frequency.value=3000;
+    fo.type='sawtooth'; fo.frequency.value=f;
+    fg.gain.setValueAtTime(0,hitT+dt); fg.gain.linearRampToValueAtTime(0.35,hitT+dt+0.03);
+    fg.gain.setValueAtTime(0.28,hitT+dt+dur*0.5); fg.gain.linearRampToValueAtTime(0,hitT+dt+dur*0.95);
+    fo.connect(flp); flp.connect(fg); fg.connect(ctx.destination);
+    fo.start(hitT+dt); fo.stop(hitT+dt+dur);
+  }
 }
 
 /* ── 轉盤 ── */
