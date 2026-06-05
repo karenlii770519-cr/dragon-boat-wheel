@@ -49,15 +49,25 @@
     flex-shrink: 0;
   }
 
-  /* 指針 */
+  /* 指針 — 右側，向左指 */
   .pointer {
     position: absolute;
-    top: -2px;
-    left: 50%;
-    transform: translateX(-50%);
+    right: -2px;
+    top: 50%;
+    transform: translateY(-50%) rotate(-90deg);
     z-index: 10;
     filter: drop-shadow(0 2px 8px rgba(255,200,0,0.9));
   }
+
+  /* 吉祥物 */
+  .mascot {
+    position: fixed;
+    bottom: 0;
+    z-index: 5;
+    pointer-events: none;
+  }
+  .mascot-l { left: 0; }
+  .mascot-r { right: 0; }
 
   /* 中心按鈕 */
   .center-btn {
@@ -176,6 +186,9 @@
 <div class="bg"></div>
 <canvas id="particles"></canvas>
 <button class="music-btn" id="musicBtn" onclick="toggleMusic()">♪</button>
+
+<img src="l.gif" class="mascot mascot-l" id="mascotL">
+<img src="r.gif" class="mascot mascot-r" id="mascotR">
 
 <div class="wheel-wrap" id="wheelWrap">
   <div class="pointer" id="pointer">
@@ -393,7 +406,7 @@ function spin() {
 
 function showResult() {
   const slice = (Math.PI*2) / OPTIONS.length;
-  const adj = ((Math.PI*1.5) - (currentAngle % (Math.PI*2)) + Math.PI*4) % (Math.PI*2);
+  const adj = (-(currentAngle % (Math.PI*2)) + Math.PI*4) % (Math.PI*2);
   const idx = Math.floor(adj / slice) % OPTIONS.length;
   document.getElementById('resultText').textContent = OPTIONS[idx];
   document.getElementById('overlay').classList.add('show');
@@ -439,6 +452,15 @@ function animP() {
   });
   if (particles.length > 0) requestAnimationFrame(animP);
 }
+
+/* 吉祥物尺寸 */
+function sizeMascots() {
+  const h = Math.round(window.innerHeight * 0.28);
+  document.getElementById('mascotL').style.height = h + 'px';
+  document.getElementById('mascotR').style.height = h + 'px';
+}
+window.addEventListener('resize', sizeMascots);
+sizeMascots();
 
 /* init */
 applySize();
