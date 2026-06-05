@@ -459,50 +459,6 @@ function toggleMusic() {
     if (ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo();
   }
 }
-function playSpin() {
-  // 真實轉盤物理音效：咔咔咔咔咔 越來越慢
-  const ctx = getCtx();
-  const spinDur = 5.5;
-  const totalClicks = OPTIONS.length * 6; // 約6圈
-
-  function mkClick() {
-    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.018), ctx.sampleRate);
-    const d = buf.getChannelData(0);
-    for (let i = 0; i < d.length; i++)
-      d[i] = Math.exp(-i / (ctx.sampleRate * 0.004)) * (Math.random() * 2 - 1);
-    return buf;
-  }
-  const clickBuf = mkClick();
-
-  for (let i = 0; i < totalClicks; i++) {
-    // ease-out: 開始快、結束慢
-    const p = i / totalClicks;
-    const eased = 1 - Math.pow(1 - p, 2.8);
-    const t = ctx.currentTime + eased * spinDur;
-    const vol = 0.18 + p * 0.22; // 越慢聲音越清脆
-
-    const s = ctx.createBufferSource();
-    const g = ctx.createGain();
-    const bp = ctx.createBiquadFilter();
-    bp.type = 'bandpass';
-    bp.frequency.value = 1200 + p * 800;
-    bp.Q.value = 3;
-    s.buffer = clickBuf;
-    g.gain.value = vol;
-    s.connect(bp); bp.connect(g); g.connect(ctx.destination);
-    s.start(t);
-  }
-
-  // 底層旋轉嗚嗚聲（慣性感）
-  const o = ctx.createOscillator(), og = ctx.createGain();
-  o.type = 'sawtooth';
-  o.frequency.setValueAtTime(280, ctx.currentTime);
-  o.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + spinDur);
-  og.gain.setValueAtTime(0.06, ctx.currentTime);
-  og.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + spinDur);
-  o.connect(og); og.connect(ctx.destination);
-  o.start(ctx.currentTime); o.stop(ctx.currentTime + spinDur);
-}
 
 function playWin() {
   // 打鼓揭曉：snare roll → 大鼓 crash → 銅管 fanfare
@@ -638,13 +594,18 @@ function spin() {
     const t = Math.min((now-t0)/dur, 1);
     currentAngle = a0 + totalRad * ease(t);
     drawWheel(currentAngle);
-    // 剩約 1.2 秒時提前播揭曉音效
-    if (!winPlayed && (now - t0) > dur - 1200) {
+    // snare roll 約 1.6 秒，提前觸發讓 BOOM 剛好對到轉盤停止
+    if (!winPlayed && (now - t0) > dur - 1650) {
       winPlayed = true;
       playWin();
     }
     if (t < 1) requestAnimationFrame(frame);
-    else { spinning = false; spinBtn.disabled = false; showResult(); }
+    else {
+      spinning = false;
+      spinBtn.disabled = false;
+      // BOOM 剛好此刻，等 0.2 秒再彈出結果
+      setTimeout(showResult, 200);
+    }
   }
   requestAnimationFrame(frame);
 }
