@@ -629,15 +629,20 @@ function spin() {
     btn.textContent = '♫'; btn.style.color = '#A7C957';
     startBgm();
   }
-  playSpin();
   const totalRad = (Math.random()*360 + 1800 + 720) * (Math.PI/180);
   const dur = 4500 + Math.random()*2000;
   const t0 = performance.now(), a0 = currentAngle;
   const ease = t => 1 - Math.pow(1-t, 4);
+  let winPlayed = false;
   function frame(now) {
     const t = Math.min((now-t0)/dur, 1);
     currentAngle = a0 + totalRad * ease(t);
     drawWheel(currentAngle);
+    // 剩約 1.2 秒時提前播揭曉音效
+    if (!winPlayed && (now - t0) > dur - 1200) {
+      winPlayed = true;
+      playWin();
+    }
     if (t < 1) requestAnimationFrame(frame);
     else { spinning = false; spinBtn.disabled = false; showResult(); }
   }
@@ -650,7 +655,6 @@ function showResult() {
   const idx = Math.floor(adj / slice) % OPTIONS.length;
   document.getElementById('resultText').textContent = OPTIONS[idx];
   document.getElementById('overlay').classList.add('show');
-  playWin();
   launchConfetti();
 }
 function closeResult() {
