@@ -52,11 +52,10 @@
   /* 指針 — 右側，向左指 */
   .pointer {
     position: absolute;
-    right: -2px;
     top: 50%;
-    transform: translateY(-50%) rotate(-90deg);
     z-index: 10;
     filter: drop-shadow(0 2px 8px rgba(255,200,0,0.9));
+    /* right 由 JS 動態設定 */
   }
 
   /* 吉祥物 */
@@ -244,11 +243,21 @@ function applySize() {
   wrap.style.width  = s + 'px';
   wrap.style.height = s + 'px';
 
-  // 指針大小
+  // 指針大小與位置
   const psvg = document.querySelector('.pointer svg');
   const ps = Math.round(s * 0.075);
   psvg.style.width  = ps + 'px';
   psvg.style.height = Math.round(ps * 1.37) + 'px';
+  // 指針旋轉 -90deg 後，SVG 高度變成橫向長度
+  // 尖端在 SVG y=50/52，旋轉後從 div 中心往左伸出
+  // 讓尖端剛好落在圓的外圈（right edge of canvas = right:0）
+  const pHeight = Math.round(ps * 1.37);
+  const tipRatio = 50 / 52; // 尖端位於 SVG 高度的 96%
+  // 把 div 往右推，使尖端對齊圓邊
+  const pushOut = Math.round(pHeight * tipRatio - pHeight / 2) + 6;
+  const pointerEl = document.querySelector('.pointer');
+  pointerEl.style.right = `-${pushOut}px`;
+  pointerEl.style.transform = `translateY(-50%) rotate(-90deg)`;
 
   // 中心按鈕大小
   const cb = document.getElementById('centerBtn');
