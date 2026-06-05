@@ -207,14 +207,7 @@
 <script>
 const OPTIONS = ['粽子','平安健康','划龍舟','艾草','菖蒲','香包','雄黃酒','屈原','楚國','汨羅江','糯米','鹹蛋黃','我愛端午','南部粽','北部粽','白蛇傳','豆沙粽','冰箱冷凍庫','粽繩','吃飽飽','驅邪','立蛋','午時水','端陽','美女里長','五彩線','節慶','電鍋','蝦米','舞龍舞獅'];
 
-const COLORS = [
-  '#2D6A4F','#40916C','#52B788','#74C69D','#95D5B2',
-  '#B7E4C7','#1B4332','#386641','#6A994E','#A7C957',
-  '#386641','#52B788','#2D6A4F','#74C69D','#40916C',
-  '#4A7C59','#557A46','#6B9E6B','#8DB87A','#A8C686',
-  '#3A5A40','#588157','#A3B18A','#DAD7CD','#7D9F6A',
-  '#4F6F52','#739072','#86A789','#D2E3C8','#5C7A5C'
-];
+const COLORS = OPTIONS.map((_, i) => i % 2 === 0 ? '#2D6A4F' : '#F0F7F0');
 
 /* ── 尺寸自適應 ── */
 const wheelCanvas = document.getElementById('wheel');
@@ -353,11 +346,12 @@ function drawWheel(angle) {
     const fs = Math.max(11, Math.round(W * 0.028));
     ctx2d.font = `bold ${fs}px 'PingFang TC','Noto Sans TC',sans-serif`;
     ctx2d.textAlign = 'right';
-    ctx2d.strokeStyle = 'rgba(0,0,0,0.9)';
-    ctx2d.lineWidth = 3.5;
+    const isWhite = i % 2 !== 0;
+    ctx2d.strokeStyle = isWhite ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.7)';
+    ctx2d.lineWidth = 3;
     ctx2d.lineJoin = 'round';
     ctx2d.strokeText(opt, r - Math.round(W*0.025), fs*0.38);
-    ctx2d.fillStyle = '#fff';
+    ctx2d.fillStyle = isWhite ? '#1B4332' : '#fff';
     ctx2d.fillText(opt, r - Math.round(W*0.025), fs*0.38);
     ctx2d.restore();
   });
